@@ -100,35 +100,46 @@ Function Copy-Data {
 	# escaping for later regex operations
 	$escapedSource = [Regex]::Escape($sourceDir)
 	
-	foreach($entry in $includedFsEntries) {
-		$path = $entry.FullName
-		If($path -match $excludeFilePattern) {
+	$includedFsEntries | ForEach-Object -Parallel {
+	#foreach($entry in $includedFsEntries) {
+		$entry = $_
+		
+		If($entry.FullName -match $using:excludeFilePattern) {
 			continue
 		}
 		
-		$newPath = $path -replace "^$escapedSource","$destinationDir"
+		Function Copy-Datum {
+			param([System.IO.FileSystemInfo]$entry, [String]$escapedSource, [String]$destinationDir)
+			
+			
+			$path = $entry.FullName
+			$newPath = $path -replace "^$escapedSource","$destinationDir"
+			
+			try {
+				$newEntry = Copy-Item -Force -PassThru -Path $path -Destination $newPath -ErrorAction Stop
+				
+				$newEntry.Attributes = $entry.Attributes
+				# security descriptors
+				Set-Acl $newPath $(Get-Acl $newEntry)
+				# TODO: something is wrong with last access time and last write time
+				$newEntry.CreationTime = $entry.CreationTime
+				$newEntry.LastWriteTime = $entry.LastWriteTime
+				$newEntry.LastAccessTime = $entry.LastAccessTime
+				
+				#Set-ItemProperty -Path $newPath -Name CreationTime -Value $entry.CreationTime
+				#Set-ItemProperty -Path $newPath -Name LastAccessTime -Value $entry.LastAccessTime
+				#Set-ItemProperty -Path $newPath -Name LastWriteTime -Value $entry.LastWriteTime
+				
+				#echo "Copied file to $newPath."
+			}
+			catch {
+				echo "Failed to copy file '$path' - $($_.Exception.GetType().FullName): $($_.Exception.Message)"
+			}
+		}
 		
-		try {
-			$newEntry = Copy-Item -Force -PassThru -Path $path -Destination $newPath -ErrorAction Stop
-			
-			$newEntry.Attributes = $entry.Attributes
-			# security descriptors
-			Set-Acl $newPath $(Get-Acl $newEntry)
-			# TODO: something is wrong with last access time and last write time
-			$newEntry.CreationTime = $entry.CreationTime
-			$newEntry.LastWriteTime = $entry.LastWriteTime
-			$newEntry.LastAccessTime = $entry.LastAccessTime
-			
-			#Set-ItemProperty -Path $newPath -Name CreationTime -Value $entry.CreationTime
-			#Set-ItemProperty -Path $newPath -Name LastAccessTime -Value $entry.LastAccessTime
-			#Set-ItemProperty -Path $newPath -Name LastWriteTime -Value $entry.LastWriteTime
-			
-			#echo "Copied file to $newPath."
-		}
-		catch {
-			echo "Failed to copy file '$path' - $($_.Exception.GetType().FullName): $($_.Exception.Message)"
-		}
-	}
+		Copy-Datum $entry $using:escapedSource $using:destinationDir
+		
+	} -ThrottleLimit 5
 	
 	# for each directory
 	#foreach ($dir in $includedFsEntries | Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::Directory) -eq [System.IO.FileAttributes]::Directory }) {

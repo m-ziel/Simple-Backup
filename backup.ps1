@@ -140,6 +140,7 @@ Function Copy-Data {
 	#}
 }
 
-
 # === invoke Main ===
-Main
+$time = Measure-Command { Main | Out-Default }
+echo "Execution time: $($time.TotalSeconds) seconds"
+# Main

@@ -1,13 +1,11 @@
-# TODO:
-# check if invoked with admin privileges
-# not hardcode paths
-# assert high enough powershell version
-# maybe implement preserving links that do not go outside of the 'backup zone'
-# caveats when source directory is volume root
+# this obviously must not be occupied - if it is, set this to any free letter
+Set-Variable vssMountLetter -Value "S" -Option Constant
+
+# =========== [begin] SET THESE VARIABLES ===========
 
 # Source directory.
-# The drive letter used here may be changed, but must be the same as the one defined in Main to mount VSS snapshot.
-$sourceDir = "S:\Stuff\android-dev"
+# $vssMountLetter must be used instead of the drive letter.
+$sourceDir = "$($vssMountLetter):\Stuff\android-dev"
 
 # The actual drive letter of source directory.
 $sourceDrive = "D"
@@ -21,8 +19,17 @@ $destinationDir = "D:\Stuff\backup-script\misc\dest"
 # A directory for temporary files, can be set to whatever.
 $vshadowOutScriptDir = "D:\Stuff\backup-script\misc"
 
+# =========== [end] SET THESE VARIABLES ===========
+
 # modify if needed
 Set-Variable vshadowPath -Value "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\vshadow.exe" -Option Constant
+
+# TODO:
+# check if invoked with admin privileges
+# not hardcode paths
+# assert high enough powershell version
+# maybe implement preserving links that do not go outside of the 'backup zone'
+# caveats when source directory is volume root
 
 Function Main {
     echo "Executing as $($Env:UserName)."
@@ -31,7 +38,7 @@ Function Main {
 	try {
 		Create-Vss-Snapshot $vshadowOutScriptPath $sourceDrive
 		$snapshotId = Get-Snapshot-Id $vshadowOutScriptPath
-		Mount-Vss-Snapshot $snapshotId "S"
+		Mount-Vss-Snapshot $snapshotId $vssMountLetter
 		Copy-Data -sourceDir $sourceDir -excludeFilePattern $excludeFilePattern -destinationDir $destinationDir
 	}
 	finally {

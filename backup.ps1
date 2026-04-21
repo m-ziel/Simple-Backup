@@ -1,28 +1,36 @@
+# A simple backup script.
+# Please refer to the readme file.
+# Copyright (C) 2025-2026 Michał Zieliński
+
 # this obviously must not be occupied - if it is, set this to any free letter
-Set-Variable vssMountLetter -Value "S" -Option Constant
+Set-Variable vssMountLetter -Value "X" -Option Constant
 
 # =========== [begin] SET THESE VARIABLES ===========
 
 # Source directory.
 # $vssMountLetter must be used instead of the drive letter.
-$sourceDir = "$($vssMountLetter):\Stuff\android-dev"
+# Example:
+#   $sourceDir = "$($vssMountLetter):\Users\Michal"
+$sourceDir = "$($vssMountLetter):???"
 
 # The actual drive letter of source directory.
-$sourceDrive = "D"
+$sourceDrive = "C"
 
-# Files to exclude. Use "\b\B" to include all.
+# Exclude files whose path matches this regex. Use "\b\B" to include all.
 $excludeFilePattern = "\b\B"
 
 # Destination directory.
-$destinationDir = "D:\Stuff\backup-script\misc\dest"
-
-# A directory for temporary files, can be set to whatever.
-$vshadowOutScriptDir = "D:\Stuff\backup-script\misc"
+# Example:
+#   $destinationDir = "D:\Backup"
+$destinationDir = "???"
 
 # =========== [end] SET THESE VARIABLES ===========
 
 # modify if needed
 Set-Variable vshadowPath -Value "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\vshadow.exe" -Option Constant
+
+# a directory for temporary files, can be set to whatever.
+Set-Variable vshadowOutScriptDir -Value "$env:TEMP" -Option Constant
 
 # TODO:
 # check if invoked with admin privileges
@@ -30,6 +38,7 @@ Set-Variable vshadowPath -Value "C:\Program Files (x86)\Windows Kits\10\bin\10.0
 # assert high enough powershell version
 # maybe implement preserving links that do not go outside of the 'backup zone'
 # caveats when source directory is volume root
+# 
 
 Function Main {
     echo "Executing as $($Env:UserName)."

@@ -5,22 +5,37 @@
 # maybe implement preserving links that do not go outside of the 'backup zone'
 # caveats when source directory is volume root
 
+# Source directory.
+# The drive letter used here may be changed, but must be the same as the one defined in Main to mount VSS snapshot.
+$sourceDir = "S:\Stuff\android-dev"
+
+# The actual drive letter of source directory.
+$sourceDrive = "D"
+
+# Files to exclude. Use "\b\B" to include all.
+$excludeFilePattern = "\b\B"
+
+# Destination directory.
+$destinationDir = "D:\Stuff\backup-script\misc\dest"
+
+# A directory for temporary files, can be set to whatever.
+$vshadowOutScriptDir = "D:\Stuff\backup-script\misc"
+
+# modify if needed
 Set-Variable vshadowPath -Value "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\vshadow.exe" -Option Constant
 
 Function Main {
-	# Set-Variable vshadowPath -Value "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\vshadow.exe" -Option Constant 
-	
     echo "Executing as $($Env:UserName)."
-	$vshadowOutScriptPath = "C:\Users\Michal\Stuff\backup-script\misc\$(Get-Vshadow-Output-Script-Name)"
+	$vshadowOutScriptPath = "$vshadowOutScriptDir\$(Get-Vshadow-Output-Script-Name)"
 	$snapshotId = $null
 	try {
-		Create-Vss-Snapshot $vshadowOutScriptPath "C"
+		Create-Vss-Snapshot $vshadowOutScriptPath $sourceDrive
 		$snapshotId = Get-Snapshot-Id $vshadowOutScriptPath
 		Mount-Vss-Snapshot $snapshotId "S"
-		Copy-Data -sourceDir "S:\Users\Michal\" -excludeFilePattern "\b\B" -destinationDir "D:\Backup\ze-skryptu\"
+		Copy-Data -sourceDir $sourceDir -excludeFilePattern $excludeFilePattern -destinationDir $destinationDir
 	}
 	finally {
-		# Remove-Item -Path $vshadowOutScriptPath
+		Remove-Item -Path $vshadowOutScriptPath
 		Delete-Vss-Snapshot $snapshotId
 	}
 }
@@ -101,7 +116,6 @@ Function Copy-Data {
 	$escapedSource = [Regex]::Escape($sourceDir)
 	
 	$includedFsEntries | ForEach-Object -Parallel {
-	#foreach($entry in $includedFsEntries) {
 		$entry = $_
 		
 		If($entry.FullName -match $using:excludeFilePattern) {
@@ -121,16 +135,16 @@ Function Copy-Data {
 				$newEntry.Attributes = $entry.Attributes
 				# security descriptors
 				Set-Acl $newPath $(Get-Acl $newEntry)
-				# TODO: something is wrong with last access time and last write time
+				
+				# TODO: something is wrong with last access time and last write time and no method works
 				$newEntry.CreationTime = $entry.CreationTime
 				$newEntry.LastWriteTime = $entry.LastWriteTime
 				$newEntry.LastAccessTime = $entry.LastAccessTime
 				
+				# these don't work
 				#Set-ItemProperty -Path $newPath -Name CreationTime -Value $entry.CreationTime
 				#Set-ItemProperty -Path $newPath -Name LastAccessTime -Value $entry.LastAccessTime
 				#Set-ItemProperty -Path $newPath -Name LastWriteTime -Value $entry.LastWriteTime
-				
-				#echo "Copied file to $newPath."
 			}
 			catch {
 				echo "Failed to copy file '$path' - $($_.Exception.GetType().FullName): $($_.Exception.Message)"
@@ -141,6 +155,7 @@ Function Copy-Data {
 		
 	} -ThrottleLimit 5
 	
+	# setting last access time and last write time after copying also doesn't work
 	# for each directory
 	#foreach ($dir in $includedFsEntries | Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::Directory) -eq [System.IO.FileAttributes]::Directory }) {
 	#	$path = $entry.FullName
@@ -153,5 +168,8 @@ Function Copy-Data {
 
 # === invoke Main ===
 $time = Measure-Command { Main | Out-Default }
-echo "Execution time: $($time.TotalSeconds) seconds"
+echo "Execution time: $($time.TotalSeconds) seconds."
+
+# invoke without measuring time
 # Main
+

@@ -9,14 +9,15 @@ This is a simple yet powerful PowerShell script for copying files. It is intende
 
 ### Usage
 Set the required variables in the script and run it with administrative privileges. 
+
 `> pwsh .\backup.ps1`
 
 ### Requirements
-- at least version 7.0 of PowerShell
+- At least version 7.0 of PowerShell
 
 ### Limitations
-- last access time and last write time are not preserved
-- performance may degrade for large volumes of files
+- Last access time and last write time are not preserved
+- Performance may degrade for large volumes of files
 
 ### License
 Licensed under the Apache License 2.0. See the LICENSE.txt file for details.
